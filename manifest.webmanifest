@@ -1,7 +1,7 @@
 {
   "name": "Parking Pin",
   "short_name": "Parking Pin",
-  "description": "Save where you parked. Find your car later. No account.",
+  "description": "Save where you parked on iPhone or Android. Stays on this phone.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

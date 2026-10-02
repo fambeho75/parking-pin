@@ -1,14 +1,25 @@
 # Parking Pin
 
-Single-page tool: tap **I’m parked** to save GPS plus an optional level/zone note, then tap **Find car** to open Maps. No accounts — data stays in this browser’s `localStorage`.
+Save where you parked, then open Maps back to the car. Works on **iPhone and Android** in any modern mobile browser that can share GPS. No account.
 
-**Live site:** https://fambeho75.github.io/parking-pin/
+**Open this first:** https://fambeho75.github.io/parking-pin/
 
-## iPhone, HTTPS, and GPS
+That GitHub Pages address is HTTPS, which phones require before they will share location. A plain `http://` link can show the page and still block GPS. Bookmark that URL, or add it to the home screen, and keep using the same one.
 
-Safari only shares location in a **secure context** (`https://` or `localhost`). Open the Pages URL above on the iPhone — it is already HTTPS — then allow location when you tap **I’m parked**.
+## How to use
 
-Share → **Add to Home Screen** to keep a full-screen icon on that same HTTPS origin. A plain `http://` address (for example a LAN IP) often loads the page but blocks GPS. If location is denied, the app still saves the note and timestamp.
+1. Open https://fambeho75.github.io/parking-pin/ on your iPhone or Android phone.
+2. Optional: add it to the home screen so the next visit is one tap. iPhone: Share → **Add to Home Screen**. Android: browser menu → **Add to Home screen** or **Install app**.
+3. In the garage, tap a note chip or type a level or zone, then tap **I’m parked** and allow location.
+4. Later, open that same bookmark or home-screen icon and tap **Find car**. Apple Maps opens on iPhone; Google Maps opens on Android. Tapping the map does the same thing.
+
+The pin is stored only on that phone, in that browser (`localStorage`). It is not saved in the cloud. Another phone, another browser, or cleared site data starts empty.
+
+**Update pin** saves again. **Clear pin** asks first. Chips append with ` · `; tap a chip again to remove it. A GPS pin shows a map above **Find car**. A note-only pin hides the map.
+
+## Map
+
+The snapshot uses [OpenStreetMap](https://www.openstreetmap.org/copyright) tiles (`tile.openstreetmap.org`) at zoom 18. No API key. `staticmap.openstreetmap.de` is discontinued, so the page places the tiles and draws the marker. If the tiles fail, the spot shows “map unavailable”.
 
 ## Files
 
@@ -26,18 +37,6 @@ python3 -m http.server 8777
 ```
 
 Open http://127.0.0.1:8777/ (GPS works on localhost). Do not open the file with `file://` — geolocation and the service worker will fail.
-
-## How to use
-
-1. Open the page in the garage.
-2. Optionally type a level or zone, or tap a quick note (P1–P3, Yellow, Blue, Red, Green, Elevators, Near exit). A chip appends with ` · `. Tap it again to remove that label.
-3. Tap **I’m parked** and allow location if asked.
-4. Later, open the same bookmark or home-screen icon and tap **Find car** (Apple Maps on iPhone, Google Maps elsewhere; a Google Maps link is also shown on iOS). A saved GPS pin also shows a static map above that button; tap the map for the same directions link. Note-only pins hide the map.
-
-## Map
-
-The snapshot uses [OpenStreetMap](https://www.openstreetmap.org/copyright) standard tiles (`tile.openstreetmap.org`) at zoom 18. No API key. `staticmap.openstreetmap.de` is discontinued, so the page places the tiles itself and draws the orange marker. If the tiles fail to load, the spot shows “map unavailable”.
-5. **Update pin** saves again. **Clear pin** asks for confirmation.
 
 ## Storage
 
