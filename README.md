@@ -30,7 +30,7 @@ Open http://127.0.0.1:8777/ (GPS works on localhost). Do not open the file with 
 ## How to use
 
 1. Open the page in the garage.
-2. Optionally type a level or zone (for example `P2 · yellow · near elevators`).
+2. Optionally type a level or zone, or tap a quick note (P1–P3, Yellow, Blue, Red, Green, Elevators, Near exit). Chips append with ` · ` and skip text already in the note.
 3. Tap **I’m parked** and allow location if asked.
 4. Later, open the same bookmark or home-screen icon and tap **Find car** (Apple Maps on iPhone, Google Maps elsewhere; a Google Maps link is also shown on iOS).
 5. **Update pin** saves again. **Clear pin** asks for confirmation.

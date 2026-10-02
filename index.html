@@ -118,6 +118,45 @@
 
     input[type="text"]::placeholder { color: #666; }
 
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 0 0 10px;
+    }
+
+    .chip {
+      -webkit-appearance: none;
+      appearance: none;
+      min-height: 48px;
+      padding: 10px 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      font: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1.1;
+      cursor: pointer;
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    .chip:active,
+    .chip.is-on {
+      background: var(--accent);
+      color: #111;
+      border-color: var(--accent);
+    }
+
+    .chip.is-on:active { background: var(--accent-press); }
+
+    .chip:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(255, 106, 0, 0.25);
+    }
+
     .btn {
       display: flex;
       align-items: center;
@@ -277,6 +316,17 @@
   <section class="card" aria-labelledby="park-heading">
     <h2 id="park-heading" class="hidden">Park</h2>
     <label for="note">Level / zone / note</label>
+    <div class="chips" id="note-chips" role="group" aria-label="Quick notes">
+      <button type="button" class="chip" data-note="P1" aria-pressed="false">P1</button>
+      <button type="button" class="chip" data-note="P2" aria-pressed="false">P2</button>
+      <button type="button" class="chip" data-note="P3" aria-pressed="false">P3</button>
+      <button type="button" class="chip" data-note="Yellow" aria-pressed="false">Yellow</button>
+      <button type="button" class="chip" data-note="Blue" aria-pressed="false">Blue</button>
+      <button type="button" class="chip" data-note="Red" aria-pressed="false">Red</button>
+      <button type="button" class="chip" data-note="Green" aria-pressed="false">Green</button>
+      <button type="button" class="chip" data-note="Elevators" aria-pressed="false">Elevators</button>
+      <button type="button" class="chip" data-note="Near exit" aria-pressed="false">Near exit</button>
+    </div>
     <input
       id="note"
       type="text"
@@ -284,7 +334,7 @@
       autocomplete="off"
       autocorrect="off"
       enterkeyhint="done"
-      placeholder="P2 · yellow · near elevators"
+      placeholder="P2 · Yellow · Elevators"
     />
     <button type="button" class="btn btn-primary" id="btn-park">
       I’m parked
@@ -346,8 +396,11 @@
       var GEO_TIMEOUT_MS = 20000;
       var GEO_MAX_AGE_MS = 10000;
 
+      var NOTE_SEP = " · ";
+
       var el = {
         note: document.getElementById("note"),
+        chips: document.getElementById("note-chips"),
         status: document.getElementById("status"),
         btnPark: document.getElementById("btn-park"),
         pinEmpty: document.getElementById("pin-empty"),
@@ -420,6 +473,49 @@
         el.status.className = "status" + (kind ? " " + kind : "");
       }
 
+      function escapeRegExp(s) {
+        return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      }
+
+      function noteHasChip(note, label) {
+        if (!note || !label) return false;
+        var re = new RegExp(
+          "(^|[\\s·,.;])" + escapeRegExp(label) + "(?=$|[\\s·,.;])",
+          "i"
+        );
+        return re.test(String(note));
+      }
+
+      function syncNoteChips() {
+        if (!el.chips) return;
+        var value = el.note.value || "";
+        var buttons = el.chips.querySelectorAll(".chip");
+        for (var i = 0; i < buttons.length; i++) {
+          var label = buttons[i].getAttribute("data-note") || "";
+          var on = noteHasChip(value, label);
+          buttons[i].classList.toggle("is-on", on);
+          buttons[i].setAttribute("aria-pressed", on ? "true" : "false");
+        }
+      }
+
+      function appendNoteChip(label) {
+        if (!label) return;
+        var current = el.note.value || "";
+        if (noteHasChip(current, label)) {
+          syncNoteChips();
+          return;
+        }
+        var trimmed = current.trim();
+        var next = trimmed ? trimmed + NOTE_SEP + label : label;
+        var max = el.note.maxLength > 0 ? el.note.maxLength : 120;
+        if (next.length > max) {
+          setStatus("Note is full (" + max + " characters).", "error");
+          return;
+        }
+        el.note.value = next;
+        syncNoteChips();
+      }
+
       function mapsUrls(lat, lng) {
         var dest = encodeURIComponent(lat + "," + lng);
         return {
@@ -434,6 +530,7 @@
           el.pinEmpty.classList.remove("hidden");
           el.pinPanel.classList.add("hidden");
           el.linkGoogle.classList.add("hidden");
+          syncNoteChips();
           return;
         }
 
@@ -465,6 +562,7 @@
         if (pin.note && !el.note.value) {
           el.note.value = pin.note;
         }
+        syncNoteChips();
       }
 
       function getPosition() {
@@ -561,6 +659,16 @@
         setStatus("Pin cleared.");
         render();
       }
+
+      if (el.chips) {
+        el.chips.addEventListener("click", function (e) {
+          var btn = e.target && e.target.closest ? e.target.closest(".chip") : null;
+          if (!btn || !el.chips.contains(btn)) return;
+          appendNoteChip(btn.getAttribute("data-note"));
+        });
+      }
+
+      el.note.addEventListener("input", syncNoteChips);
 
       el.btnPark.addEventListener("click", park);
       el.btnUpdate.addEventListener("click", park);
