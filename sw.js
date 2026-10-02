@@ -1,5 +1,5 @@
 /* Parking Pin — minimal offline cache */
-const CACHE = "parking-pin-v3";
+const CACHE = "parking-pin-v4";
 const ASSETS = [
   "./",
   "./index.html",
@@ -26,6 +26,28 @@ self.addEventListener("fetch", (event) => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
+  // Do not intercept sw.js. A cached worker script would block later updates.
+  if (url.pathname.endsWith("/sw.js")) return;
+
+  const isAppShell = req.mode === "navigate" ||
+    url.pathname.endsWith("/") ||
+    url.pathname.endsWith("/index.html");
+
+  if (isAppShell) {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          if (res && res.ok && res.type === "basic") {
+            const copy = res.clone();
+            caches.open(CACHE).then((cache) => cache.put(req, copy));
+          }
+          return res;
+        })
+        .catch(() => caches.match(req).then((cached) => cached || caches.match("./index.html")))
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(req).then((cached) => {
       const fetched = fetch(req)
