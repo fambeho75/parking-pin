@@ -1,6 +1,6 @@
 # Parking Pin
 
-![Parking Pin on a phone: black screen, orange note chips, and an I’m parked button](assets/preview.png)
+<img src="assets/preview.png" width="320" alt="Parking Pin on a phone: black screen, orange note chips, and an I’m parked button">
 
 Save where you parked, then open Maps back to the car. Works on **iPhone and Android** in any modern mobile browser that can share GPS. No account.
 
