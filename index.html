@@ -215,6 +215,13 @@
     .status.error { color: var(--danger); }
     .status.ok { color: var(--ok); }
 
+    .pin-replace {
+      margin: 8px 0 0;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
     .pin-empty {
       color: var(--muted);
       text-align: center;
@@ -403,6 +410,7 @@
     <button type="button" class="btn btn-primary" id="btn-park">
       I’m parked
     </button>
+    <p class="pin-replace hidden" id="pin-replace">This replaces the saved pin.</p>
     <p class="status" id="status" role="status" aria-live="polite"></p>
   </section>
 
@@ -445,9 +453,6 @@
       </button>
       <a class="link-fallback hidden" id="link-google" href="#" target="_blank" rel="noopener">Open in Google Maps</a>
 
-      <div class="actions-row">
-        <button type="button" class="btn btn-secondary" id="btn-update">Update pin</button>
-      </div>
       <button type="button" class="btn btn-danger" id="btn-clear">Clear pin</button>
     </div>
   </section>
@@ -481,6 +486,7 @@
         chips: document.getElementById("note-chips"),
         status: document.getElementById("status"),
         btnPark: document.getElementById("btn-park"),
+        pinReplace: document.getElementById("pin-replace"),
         pinEmpty: document.getElementById("pin-empty"),
         pinPanel: document.getElementById("pin-panel"),
         pinTime: document.getElementById("pin-time"),
@@ -495,7 +501,6 @@
         mapCredit: document.getElementById("map-credit"),
         btnFind: document.getElementById("btn-find"),
         linkGoogle: document.getElementById("link-google"),
-        btnUpdate: document.getElementById("btn-update"),
         btnClear: document.getElementById("btn-clear"),
         dialog: document.getElementById("clear-dialog"),
         btnClearCancel: document.getElementById("btn-clear-cancel"),
@@ -743,10 +748,13 @@
           el.pinEmpty.classList.remove("hidden");
           el.pinPanel.classList.add("hidden");
           el.linkGoogle.classList.add("hidden");
+          el.pinReplace.classList.add("hidden");
           hideMap();
           syncNoteChips();
           return;
         }
+
+        el.pinReplace.classList.remove("hidden");
 
         el.pinEmpty.classList.add("hidden");
         el.pinPanel.classList.remove("hidden");
@@ -811,8 +819,8 @@
       }
 
       async function park() {
+        var replacing = !!loadPin();
         el.btnPark.disabled = true;
-        el.btnUpdate.disabled = true;
         setStatus("Locating…");
 
         var note = (el.note.value || "").trim();
@@ -832,7 +840,7 @@
             pin.lat = pos.coords.latitude;
             pin.lng = pos.coords.longitude;
             pin.accuracy = pos.coords.accuracy;
-            setStatus("Pin saved with GPS.", "ok");
+            setStatus(replacing ? "Pin replaced." : "Pin saved with GPS.", "ok");
           } catch (err) {
             setStatus(geoErrorMessage(err), "error");
           }
@@ -845,7 +853,6 @@
         savePin(pin);
         render();
         el.btnPark.disabled = false;
-        el.btnUpdate.disabled = false;
       }
 
       function findCar() {
@@ -885,7 +892,6 @@
       el.note.addEventListener("input", syncNoteChips);
 
       el.btnPark.addEventListener("click", park);
-      el.btnUpdate.addEventListener("click", park);
       el.btnFind.addEventListener("click", findCar);
       el.btnClear.addEventListener("click", openClearDialog);
       el.btnClearCancel.addEventListener("click", function () { el.dialog.close(); });

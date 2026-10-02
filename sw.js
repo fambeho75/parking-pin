@@ -1,5 +1,5 @@
 /* Parking Pin — minimal offline cache */
-const CACHE = "parking-pin-v6";
+const CACHE = "parking-pin-v7";
 const ASSETS = [
   "./",
   "./index.html",
