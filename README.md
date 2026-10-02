@@ -13,7 +13,7 @@ That GitHub Pages address is HTTPS, which phones require before they will share 
 1. Open https://fambeho75.github.io/parking-pin/ on your iPhone or Android phone.
 2. Optional: add it to the home screen so the next visit is one tap. iPhone: Share → **Add to Home Screen**. Android: browser menu → **Add to Home screen** or **Install app**.
 3. In the garage, tap a note chip or type a level or zone, then tap **I’m parked** and allow location.
-4. Later, open that same bookmark or home-screen icon and tap **Find car**. Apple Maps opens on iPhone; Google Maps opens on Android. Tapping the map does the same thing.
+4. Later, open that same bookmark or home-screen icon, tap the saved pin (note and time), then tap **Find car**. Apple Maps opens on iPhone; Google Maps opens on Android. Tapping the map does the same thing. **Back** returns to the main screen.
 
 The pin is stored only on that phone, in that browser (`localStorage`). It is not saved in the cloud. Another phone, another browser, or cleared site data starts empty.
 
