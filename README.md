@@ -1,5 +1,7 @@
 # Parking Pin
 
+![Parking Pin on a phone: black screen, orange note chips, and an I’m parked button](assets/preview.png)
+
 Save where you parked, then open Maps back to the car. Works on **iPhone and Android** in any modern mobile browser that can share GPS. No account.
 
 **Open this first:** https://fambeho75.github.io/parking-pin/
