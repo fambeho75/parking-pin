@@ -581,10 +581,35 @@
         }
       }
 
-      function appendNoteChip(label) {
+      function stripChipLabel(text, label) {
+        var pattern = new RegExp(
+          "(^|[\\s,.;]+)" + escapeRegExp(label) + "(?=$|[\\s,.;])",
+          "i"
+        );
+        var next = String(text);
+        var guard = 0;
+        while (guard < 6 && pattern.test(next)) {
+          next = next.replace(pattern, " ").replace(/\s{2,}/g, " ").trim();
+          guard++;
+        }
+        return next.trim();
+      }
+
+      function removeChipLabel(note, label) {
+        var parts = String(note).split(/\s*·\s*/);
+        var kept = [];
+        for (var i = 0; i < parts.length; i++) {
+          var stripped = stripChipLabel(parts[i], label).replace(/^[,.;\s]+|[,.;\s]+$/g, "").trim();
+          if (stripped) kept.push(stripped);
+        }
+        return kept.join(NOTE_SEP);
+      }
+
+      function toggleNoteChip(label) {
         if (!label) return;
         var current = el.note.value || "";
         if (noteHasChip(current, label)) {
+          el.note.value = removeChipLabel(current, label);
           syncNoteChips();
           return;
         }
@@ -853,7 +878,7 @@
         el.chips.addEventListener("click", function (e) {
           var btn = e.target && e.target.closest ? e.target.closest(".chip") : null;
           if (!btn || !el.chips.contains(btn)) return;
-          appendNoteChip(btn.getAttribute("data-note"));
+          toggleNoteChip(btn.getAttribute("data-note"));
         });
       }
 
