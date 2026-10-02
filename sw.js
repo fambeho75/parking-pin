@@ -1,10 +1,16 @@
 /* Parking Pin — minimal offline cache */
-const CACHE = "parking-pin-v15";
+const CACHE = "parking-pin-v16";
 const ASSETS = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
-  "./icon.svg"
+  "./icon.svg?v=16",
+  "./apple-touch-icon.png?v=16",
+  "./favicon-32.png?v=16",
+  "./icon-192.png?v=16",
+  "./icon-512.png?v=16",
+  "./icon-maskable-192.png?v=16",
+  "./icon-maskable-512.png?v=16"
 ];
 
 self.addEventListener("install", (event) => {

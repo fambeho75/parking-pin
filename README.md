@@ -28,7 +28,8 @@ The snapshot uses [OpenStreetMap](https://www.openstreetmap.org/copyright) tiles
 - `index.html` — full UI and logic
 - `manifest.webmanifest` — Add to Home Screen
 - `sw.js` — optional offline cache after the first load
-- `icon.svg` — home-screen icon and favicon
+- `apple-touch-icon.png`, `icon-192.png`, `icon-512.png` — home-screen and PWA icons (PNG). iOS ignores SVG icons.
+- `icon.svg` — the same mark, used as an optional favicon
 
 ## Local development
 
