@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="Parking Pin">
-  <rect width="180" height="180" rx="49.09" fill="#ff6a00"/>
+  <rect width="180" height="180" rx="49.09" fill="#c4402a"/>
   <g transform="translate(36.82 36.82) scale(4.43182)">
     <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#111"/>
-    <circle cx="12" cy="9" r="2.5" fill="#ff6a00"/>
+    <circle cx="12" cy="9" r="2.5" fill="#c4402a"/>
   </g>
 </svg>
