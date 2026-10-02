@@ -1,4 +1,4 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="Parking Pin">
   <rect width="180" height="180" fill="#000"/>
-  <path fill="#a3a3a3" fill-rule="evenodd" d="M47 36h52c22 0 34 14 34 32s-12 32-34 32H67v44H47V36zm20 16v32h30c10 0 16-6 16-16s-6-16-16-16H67z"/>
+  <path fill="#f97316" fill-rule="evenodd" d="M47 36h52c22 0 34 14 34 32s-12 32-34 32H67v44H47V36zm20 16v32h30c10 0 16-6 16-16s-6-16-16-16H67z"/>
 </svg>
