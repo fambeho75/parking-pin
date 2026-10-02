@@ -1,5 +1,5 @@
 /* Parking Pin — minimal offline cache */
-const CACHE = "parking-pin-v2";
+const CACHE = "parking-pin-v3";
 const ASSETS = [
   "./",
   "./index.html",
@@ -24,6 +24,8 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return;
   event.respondWith(
     caches.match(req).then((cached) => {
       const fetched = fetch(req)

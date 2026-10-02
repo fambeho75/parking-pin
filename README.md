@@ -32,7 +32,11 @@ Open http://127.0.0.1:8777/ (GPS works on localhost). Do not open the file with 
 1. Open the page in the garage.
 2. Optionally type a level or zone, or tap a quick note (P1–P3, Yellow, Blue, Red, Green, Elevators, Near exit). Chips append with ` · ` and skip text already in the note.
 3. Tap **I’m parked** and allow location if asked.
-4. Later, open the same bookmark or home-screen icon and tap **Find car** (Apple Maps on iPhone, Google Maps elsewhere; a Google Maps link is also shown on iOS).
+4. Later, open the same bookmark or home-screen icon and tap **Find car** (Apple Maps on iPhone, Google Maps elsewhere; a Google Maps link is also shown on iOS). A saved GPS pin also shows a static map above that button; tap the map for the same directions link. Note-only pins hide the map.
+
+## Map
+
+The snapshot uses [OpenStreetMap](https://www.openstreetmap.org/copyright) standard tiles (`tile.openstreetmap.org`) at zoom 18. No API key. `staticmap.openstreetmap.de` is discontinued, so the page places the tiles itself and draws the orange marker. If the tiles fail to load, the spot shows “map unavailable”.
 5. **Update pin** saves again. **Clear pin** asks for confirmation.
 
 ## Storage

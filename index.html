@@ -258,6 +258,70 @@
 
     .note-value { color: var(--accent); }
 
+    .map-block { margin-top: 14px; }
+
+    .map-link {
+      position: relative;
+      display: block;
+      height: 180px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: #111;
+      text-decoration: none;
+    }
+
+    .map-link:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(255, 106, 0, 0.25);
+    }
+
+    .map-stage { position: absolute; inset: 0; }
+
+    .map-tile {
+      position: absolute;
+      width: 256px;
+      height: 256px;
+      max-width: none;
+    }
+
+    .map-dot {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 16px;
+      height: 16px;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: var(--accent);
+      border: 3px solid #111;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .map-fallback {
+      margin: 0;
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--muted);
+      font-size: 0.95rem;
+      text-align: center;
+    }
+
+    .map-credit {
+      display: block;
+      margin-top: 6px;
+      text-align: right;
+      color: var(--muted);
+      font-size: 0.75rem;
+      text-decoration: none;
+    }
+
     .actions-row {
       display: flex;
       gap: 10px;
@@ -365,6 +429,17 @@
         </div>
       </div>
 
+      <!-- Static map: OpenStreetMap tiles from tile.openstreetmap.org at zoom 18.
+           No API key. staticmap.openstreetmap.de is discontinued. Marker is drawn here. -->
+      <div class="map-block hidden" id="map-block">
+        <a class="map-link" id="map-link" href="#">
+          <span class="map-stage" id="map-stage"></span>
+          <span class="map-dot" aria-hidden="true"></span>
+        </a>
+        <p class="map-fallback hidden" id="map-fallback">map unavailable</p>
+        <a class="map-credit" id="map-credit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a>
+      </div>
+
       <button type="button" class="btn btn-maps" id="btn-find">
         Find car
       </button>
@@ -397,6 +472,9 @@
       var GEO_MAX_AGE_MS = 10000;
 
       var NOTE_SEP = " · ";
+      var MAP_ZOOM = 18;
+      var TILE_PX = 256;
+      var mapToken = 0;
 
       var el = {
         note: document.getElementById("note"),
@@ -410,6 +488,11 @@
         pinCoords: document.getElementById("pin-coords"),
         pinAccuracy: document.getElementById("pin-accuracy"),
         accuracyRow: document.getElementById("accuracy-row"),
+        mapBlock: document.getElementById("map-block"),
+        mapLink: document.getElementById("map-link"),
+        mapStage: document.getElementById("map-stage"),
+        mapFallback: document.getElementById("map-fallback"),
+        mapCredit: document.getElementById("map-credit"),
         btnFind: document.getElementById("btn-find"),
         linkGoogle: document.getElementById("link-google"),
         btnUpdate: document.getElementById("btn-update"),
@@ -524,12 +607,118 @@
         };
       }
 
+      function directionsUrl(lat, lng) {
+        var urls = mapsUrls(lat, lng);
+        return isIOS() ? urls.apple : urls.google;
+      }
+
+      function hideMap() {
+        mapToken++;
+        if (!el.mapBlock) return;
+        el.mapBlock.classList.add("hidden");
+        el.mapLink.classList.add("hidden");
+        el.mapFallback.classList.add("hidden");
+        el.mapCredit.classList.add("hidden");
+        el.mapStage.innerHTML = "";
+        el.mapLink.removeAttribute("href");
+      }
+
+      function showMapError() {
+        if (!el.mapBlock) return;
+        el.mapBlock.classList.remove("hidden");
+        el.mapLink.classList.add("hidden");
+        el.mapCredit.classList.add("hidden");
+        el.mapStage.innerHTML = "";
+        el.mapFallback.classList.remove("hidden");
+      }
+
+      function showStaticMap(lat, lng, href) {
+        var token = ++mapToken;
+        el.mapBlock.classList.remove("hidden");
+        el.mapLink.classList.remove("hidden");
+        el.mapCredit.classList.remove("hidden");
+        el.mapFallback.classList.add("hidden");
+        el.mapLink.href = href;
+        el.mapLink.setAttribute("aria-label", "Map of saved pin. Open directions.");
+        el.mapStage.innerHTML = "";
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            if (token !== mapToken) return;
+            paintStaticMap(token, lat, lng);
+          });
+        });
+      }
+
+      function paintStaticMap(token, lat, lng) {
+        var zoom = MAP_ZOOM;
+        var n = Math.pow(2, zoom);
+        var fx = (Number(lng) + 180) / 360 * n;
+        var latClamped = Math.max(-85.05112878, Math.min(85.05112878, Number(lat)));
+        var latRad = latClamped * Math.PI / 180;
+        var fy = (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n;
+        var width = el.mapLink.clientWidth || 320;
+        var height = el.mapLink.clientHeight || 180;
+        var originX = fx * TILE_PX - width / 2;
+        var originY = fy * TILE_PX - height / 2;
+        var minX = Math.floor(originX / TILE_PX);
+        var maxX = Math.floor((originX + width - 1) / TILE_PX);
+        var minY = Math.floor(originY / TILE_PX);
+        var maxY = Math.floor((originY + height - 1) / TILE_PX);
+        var centerTileX = Math.floor(fx);
+        var centerTileY = Math.floor(fy);
+        var pending = 0;
+        var centerOk = false;
+        var painting = true;
+
+        function settle() {
+          if (painting || token !== mapToken) return;
+          if (pending === 0 && !centerOk) showMapError();
+        }
+
+        for (var ty = minY; ty <= maxY; ty++) {
+          if (ty < 0 || ty >= n) continue;
+          for (var tx = minX; tx <= maxX; tx++) {
+            var wrappedX = ((tx % n) + n) % n;
+            var isCenter = tx === centerTileX && ty === centerTileY;
+            var img = document.createElement("img");
+            img.className = "map-tile";
+            img.alt = "";
+            img.width = TILE_PX;
+            img.height = TILE_PX;
+            img.draggable = false;
+            img.style.left = (tx * TILE_PX - originX) + "px";
+            img.style.top = (ty * TILE_PX - originY) + "px";
+            img.onload = function () {
+              if (token !== mapToken) return;
+              if (this.getAttribute("data-center") === "1") centerOk = true;
+              pending--;
+              settle();
+            };
+            img.onerror = function () {
+              if (token !== mapToken) return;
+              this.remove();
+              pending--;
+              settle();
+            };
+            if (isCenter) img.setAttribute("data-center", "1");
+            pending++;
+            el.mapStage.appendChild(img);
+            img.src = "https://tile.openstreetmap.org/" + zoom + "/" + wrappedX + "/" + ty + ".png";
+          }
+        }
+
+        painting = false;
+        if (pending === 0) showMapError();
+        else settle();
+      }
+
       function render() {
         var pin = loadPin();
         if (!pin) {
           el.pinEmpty.classList.remove("hidden");
           el.pinPanel.classList.add("hidden");
           el.linkGoogle.classList.add("hidden");
+          hideMap();
           syncNoteChips();
           return;
         }
@@ -555,8 +744,10 @@
           el.btnFind.dataset.google = urls.google;
           el.linkGoogle.href = urls.google;
           el.linkGoogle.classList.toggle("hidden", !isIOS());
+          showStaticMap(pin.lat, pin.lng, directionsUrl(pin.lat, pin.lng));
         } else {
           el.linkGoogle.classList.add("hidden");
+          hideMap();
         }
 
         if (pin.note && !el.note.value) {
@@ -638,9 +829,7 @@
           setStatus("No GPS coordinates to navigate to.", "error");
           return;
         }
-        var urls = mapsUrls(pin.lat, pin.lng);
-        var url = isIOS() ? urls.apple : urls.google;
-        window.location.href = url;
+        window.location.href = directionsUrl(pin.lat, pin.lng);
       }
 
       function openClearDialog() {
