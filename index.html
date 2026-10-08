@@ -128,6 +128,82 @@
       margin: 0 0 10px;
     }
 
+    .note-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .note-row input[type="text"] {
+      flex: 1;
+      width: auto;
+      min-width: 0;
+    }
+
+    .cam-btn {
+      flex-shrink: 0;
+      width: 52px;
+      height: 52px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .cam-btn svg { width: 26px; height: 26px; display: block; }
+    .cam-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .cam-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .photo-draft {
+      position: relative;
+      flex-shrink: 0;
+      width: 64px;
+      height: 64px;
+    }
+
+    .photo-draft img {
+      width: 64px;
+      height: 64px;
+      object-fit: cover;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      display: block;
+    }
+
+    .draft-remove {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: #111;
+      color: #fff;
+      font: inherit;
+      font-size: 1.1rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .file-input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+    }
+
     .chip {
       -webkit-appearance: none;
       appearance: none;
@@ -239,6 +315,15 @@
       text-align: left;
     }
 
+    .entry-thumb {
+      width: 44px;
+      height: 44px;
+      object-fit: cover;
+      border-radius: 10px;
+      flex-shrink: 0;
+      background: #000;
+    }
+
     .pin-entry-body { flex: 1; min-width: 0; }
 
     .pin-entry-note {
@@ -255,6 +340,17 @@
       color: var(--muted);
       font-size: 0.9rem;
     }
+
+    .pin-entry-countdown {
+      display: block;
+      margin-top: 2px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+    }
+
+    .pin-entry-countdown.is-warn { color: #ff4d2e; }
 
     .pin-entry-chevron {
       flex-shrink: 0;
@@ -329,6 +425,26 @@
     }
 
     .note-value { color: var(--accent); }
+
+    .pin-photo {
+      display: block;
+      width: 100%;
+      margin: 0 0 14px;
+      padding: 0;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #111;
+      cursor: pointer;
+    }
+
+    .pin-photo img {
+      display: block;
+      width: 100%;
+      max-height: 320px;
+      object-fit: contain;
+      background: #000;
+    }
 
     .map-block { margin-top: 14px; }
 
@@ -413,6 +529,38 @@
 
     .hidden { display: none !important; }
 
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .lightbox img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .lightbox-close {
+      position: absolute;
+      top: calc(12px + var(--safe-top));
+      right: 12px;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 1px solid #333;
+      background: #111;
+      color: #fff;
+      font: inherit;
+      font-size: 1.4rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+
     dialog {
       border: 1px solid var(--border);
       border-radius: var(--radius);
@@ -457,24 +605,44 @@
       <button type="button" class="chip" data-note="Elevators" aria-pressed="false">Elevators</button>
       <button type="button" class="chip" data-note="Near exit" aria-pressed="false">Near exit</button>
     </div>
-    <input
-      id="note"
-      type="text"
-      maxlength="120"
-      autocomplete="off"
-      autocorrect="off"
-      enterkeyhint="done"
-      placeholder="P2 · Yellow · Elevators"
-    />
+    <div class="chips" id="duration-chips" role="group" aria-label="Parking time">
+      <button type="button" class="chip" data-minutes="30" aria-pressed="false">30 min</button>
+      <button type="button" class="chip" data-minutes="60" aria-pressed="false">1 h</button>
+      <button type="button" class="chip" data-minutes="120" aria-pressed="false">2 h</button>
+      <button type="button" class="chip" data-minutes="180" aria-pressed="false">3 h</button>
+    </div>
+    <div class="note-row">
+      <div class="photo-draft hidden" id="photo-draft">
+        <img id="photo-preview" alt="">
+        <button type="button" class="draft-remove" id="btn-photo-remove" aria-label="Remove photo">×</button>
+      </div>
+      <input
+        id="note"
+        type="text"
+        maxlength="120"
+        autocomplete="off"
+        autocorrect="off"
+        enterkeyhint="done"
+        placeholder="P2 · Yellow · Elevators"
+      />
+      <button type="button" class="cam-btn" id="btn-camera" aria-label="Photo of the spot">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="currentColor" d="M9.2 5.2 10.4 7h3.2l1.2-1.8H18a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7.2a2 2 0 0 1 2-2h3.2ZM12 9a4 4 0 1 0 .01 8.01A4 4 0 0 0 12 9Zm0 1.8a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4Z"/>
+        </svg>
+      </button>
+    </div>
+    <input class="file-input" id="photo-input" type="file" accept="image/*" capture="environment" tabindex="-1">
     <button type="button" class="btn btn-primary" id="btn-park">
       I’m parked
     </button>
   </section>
 
   <a class="pin-entry hidden" id="pin-entry" href="#pin">
+    <img class="entry-thumb hidden" id="entry-thumb" alt="">
     <span class="pin-entry-body">
       <span class="pin-entry-note" id="entry-note">—</span>
       <span class="pin-entry-time" id="entry-time">—</span>
+      <span class="pin-entry-countdown hidden" id="entry-countdown"></span>
     </span>
     <span class="pin-entry-chevron" aria-hidden="true">›</span>
   </a>
@@ -504,6 +672,10 @@
         </div>
       </div>
 
+      <button type="button" class="pin-photo hidden" id="pin-photo-btn" aria-label="Parking spot photo">
+        <img id="pin-photo" alt="Parking spot">
+      </button>
+
       <!-- Static map: OpenStreetMap tiles from tile.openstreetmap.org at zoom 18.
            No API key. staticmap.openstreetmap.de is discontinued. Marker is drawn here. -->
       <div class="map-block hidden" id="map-block">
@@ -515,6 +687,7 @@
         <a class="map-credit" id="map-credit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a>
       </div>
 
+      <button type="button" class="btn btn-secondary hidden" id="btn-remind">Remind me</button>
       <button type="button" class="btn btn-maps" id="btn-find">
         Find car
       </button>
@@ -523,6 +696,11 @@
       <button type="button" class="btn btn-danger" id="btn-clear">Clear pin</button>
     </div>
   </section>
+  </div>
+
+  <div class="lightbox hidden" id="lightbox">
+    <button type="button" class="lightbox-close" id="lightbox-close" aria-label="Close">×</button>
+    <img id="lightbox-img" alt="Parking spot">
   </div>
 
   <dialog id="clear-dialog">
@@ -539,23 +717,42 @@
       "use strict";
 
       var STORAGE_KEY = "parking-pin-v1";
+      var PHOTO_DB = "parking-pin-photos";
+      var PHOTO_STORE = "photos";
+      var PHOTO_KEY = "spot";
       var GEO_TIMEOUT_MS = 20000;
       var GEO_MAX_AGE_MS = 10000;
+      var PHOTO_MAX_PX = 1280;
+      var PHOTO_QUALITY = 0.7;
 
       var NOTE_SEP = " · ";
       var MAP_ZOOM = 18;
       var TILE_PX = 256;
       var mapToken = 0;
 
+      var selectedMinutes = null;
+      var pendingPhoto = null;
+      var draftUrl = null;
+      var shownUrl = null;
+      var photoToken = 0;
+
       var el = {
         note: document.getElementById("note"),
         chips: document.getElementById("note-chips"),
+        durationChips: document.getElementById("duration-chips"),
         btnPark: document.getElementById("btn-park"),
+        btnCamera: document.getElementById("btn-camera"),
+        photoInput: document.getElementById("photo-input"),
+        photoDraft: document.getElementById("photo-draft"),
+        photoPreview: document.getElementById("photo-preview"),
+        btnPhotoRemove: document.getElementById("btn-photo-remove"),
         viewMain: document.getElementById("view-main"),
         viewDetail: document.getElementById("view-detail"),
         pinEntry: document.getElementById("pin-entry"),
+        entryThumb: document.getElementById("entry-thumb"),
         entryNote: document.getElementById("entry-note"),
         entryTime: document.getElementById("entry-time"),
+        entryCountdown: document.getElementById("entry-countdown"),
         btnBack: document.getElementById("btn-back"),
         pinTime: document.getElementById("pin-time"),
         pinNote: document.getElementById("pin-note"),
@@ -567,12 +764,18 @@
         mapStage: document.getElementById("map-stage"),
         mapFallback: document.getElementById("map-fallback"),
         mapCredit: document.getElementById("map-credit"),
+        pinPhotoBtn: document.getElementById("pin-photo-btn"),
+        pinPhoto: document.getElementById("pin-photo"),
         btnFind: document.getElementById("btn-find"),
+        btnRemind: document.getElementById("btn-remind"),
         linkGoogle: document.getElementById("link-google"),
         btnClear: document.getElementById("btn-clear"),
         dialog: document.getElementById("clear-dialog"),
         btnClearCancel: document.getElementById("btn-clear-cancel"),
-        btnClearConfirm: document.getElementById("btn-clear-confirm")
+        btnClearConfirm: document.getElementById("btn-clear-confirm"),
+        lightbox: document.getElementById("lightbox"),
+        lightboxImg: document.getElementById("lightbox-img"),
+        lightboxClose: document.getElementById("lightbox-close")
       };
 
       function isIOS() {
@@ -624,12 +827,19 @@
         return Number(lat).toFixed(5) + ", " + Number(lng).toFixed(5);
       }
 
+      function setChipGroupDisabled(root, locked) {
+        if (!root) return;
+        var buttons = root.querySelectorAll(".chip");
+        for (var i = 0; i < buttons.length; i++) buttons[i].disabled = locked;
+      }
+
       function setComposerLocked(locked) {
         el.btnPark.disabled = locked;
         el.note.disabled = locked;
-        if (!el.chips) return;
-        var buttons = el.chips.querySelectorAll(".chip");
-        for (var i = 0; i < buttons.length; i++) buttons[i].disabled = locked;
+        el.btnCamera.disabled = locked;
+        el.btnPhotoRemove.disabled = locked;
+        setChipGroupDisabled(el.chips, locked);
+        setChipGroupDisabled(el.durationChips, locked);
       }
 
       function escapeRegExp(s) {
@@ -695,6 +905,339 @@
         if (next.length > max) return;
         el.note.value = next;
         syncNoteChips();
+      }
+
+      function syncDurationChips(minutes) {
+        if (!el.durationChips) return;
+        var buttons = el.durationChips.querySelectorAll(".chip");
+        for (var i = 0; i < buttons.length; i++) {
+          var value = Number(buttons[i].getAttribute("data-minutes"));
+          var on = minutes != null && value === minutes;
+          buttons[i].classList.toggle("is-on", on);
+          buttons[i].setAttribute("aria-pressed", on ? "true" : "false");
+        }
+      }
+
+      function toggleDurationChip(minutes) {
+        if (el.note.disabled) return;
+        if (!minutes) return;
+        selectedMinutes = selectedMinutes === minutes ? null : minutes;
+        syncDurationChips(selectedMinutes);
+      }
+
+      function minutesFromPin(pin) {
+        if (!pin || !pin.endsAt || !pin.savedAt) return null;
+        var ms = new Date(pin.endsAt).getTime() - new Date(pin.savedAt).getTime();
+        if (!isFinite(ms) || ms <= 0) return null;
+        var mins = Math.round(ms / 60000);
+        if (mins === 30 || mins === 60 || mins === 120 || mins === 180) return mins;
+        return null;
+      }
+
+      function formatCountdown(endsAt) {
+        var end = new Date(endsAt).getTime();
+        if (isNaN(end)) return null;
+        var ms = end - Date.now();
+        if (ms <= 0) return { text: "Expired", warn: true };
+        var totalMin = Math.ceil(ms / 60000);
+        var h = Math.floor(totalMin / 60);
+        var m = totalMin % 60;
+        var mm = (m < 10 ? "0" : "") + m;
+        return { text: h + ":" + mm + " left", warn: ms < 10 * 60 * 1000 };
+      }
+
+      function updateCountdown() {
+        var pin = loadPin();
+        var countdown = pin && pin.endsAt ? formatCountdown(pin.endsAt) : null;
+        if (!countdown) {
+          el.entryCountdown.textContent = "";
+          el.entryCountdown.classList.add("hidden");
+          el.entryCountdown.classList.remove("is-warn");
+          el.btnRemind.classList.add("hidden");
+          return;
+        }
+        el.entryCountdown.textContent = countdown.text;
+        el.entryCountdown.classList.remove("hidden");
+        el.entryCountdown.classList.toggle("is-warn", countdown.warn);
+        el.btnRemind.classList.toggle("hidden", !pin.endsAt);
+        var label = el.pinEntry.getAttribute("data-base-label");
+        if (label) el.pinEntry.setAttribute("aria-label", label + ", " + countdown.text);
+      }
+
+      function openPhotoDb() {
+        return new Promise(function (resolve, reject) {
+          if (!window.indexedDB) {
+            reject(new Error("IndexedDB unavailable"));
+            return;
+          }
+          var req = indexedDB.open(PHOTO_DB, 1);
+          req.onupgradeneeded = function () {
+            var db = req.result;
+            if (!db.objectStoreNames.contains(PHOTO_STORE)) db.createObjectStore(PHOTO_STORE);
+          };
+          req.onsuccess = function () { resolve(req.result); };
+          req.onerror = function () { reject(req.error); };
+        });
+      }
+
+      function savePhotoBlob(blob) {
+        return openPhotoDb().then(function (db) {
+          return new Promise(function (resolve, reject) {
+            var tx = db.transaction(PHOTO_STORE, "readwrite");
+            tx.objectStore(PHOTO_STORE).put(blob, PHOTO_KEY);
+            tx.oncomplete = function () { resolve(); };
+            tx.onerror = function () { reject(tx.error); };
+          });
+        });
+      }
+
+      function loadPhotoBlob() {
+        return openPhotoDb().then(function (db) {
+          return new Promise(function (resolve, reject) {
+            var tx = db.transaction(PHOTO_STORE, "readonly");
+            var req = tx.objectStore(PHOTO_STORE).get(PHOTO_KEY);
+            req.onsuccess = function () { resolve(req.result || null); };
+            req.onerror = function () { reject(req.error); };
+          });
+        });
+      }
+
+      function deletePhotoBlob() {
+        return openPhotoDb().then(function (db) {
+          return new Promise(function (resolve, reject) {
+            var tx = db.transaction(PHOTO_STORE, "readwrite");
+            tx.objectStore(PHOTO_STORE).delete(PHOTO_KEY);
+            tx.oncomplete = function () { resolve(); };
+            tx.onerror = function () { reject(tx.error); };
+          });
+        }).catch(function () { /* photo store is optional */ });
+      }
+
+      function hideShownPhoto() {
+        photoToken++;
+        if (shownUrl) URL.revokeObjectURL(shownUrl);
+        shownUrl = null;
+        el.entryThumb.classList.add("hidden");
+        el.entryThumb.removeAttribute("src");
+        el.pinPhotoBtn.classList.add("hidden");
+        el.pinPhoto.removeAttribute("src");
+        el.lightboxImg.removeAttribute("src");
+        el.lightbox.classList.add("hidden");
+      }
+
+      function showStoredPhoto(pin) {
+        var token = ++photoToken;
+        if (!pin || !pin.hasPhoto) {
+          hideShownPhoto();
+          return;
+        }
+        loadPhotoBlob().then(function (blob) {
+          if (token !== photoToken) return;
+          if (!blob) {
+            hideShownPhoto();
+            return;
+          }
+          if (shownUrl) URL.revokeObjectURL(shownUrl);
+          shownUrl = URL.createObjectURL(blob);
+          el.entryThumb.src = shownUrl;
+          el.entryThumb.classList.remove("hidden");
+          el.pinPhoto.src = shownUrl;
+          el.pinPhotoBtn.classList.remove("hidden");
+          el.lightboxImg.src = shownUrl;
+        }).catch(function () {
+          if (token === photoToken) hideShownPhoto();
+        });
+      }
+
+      function clearDraftPhoto() {
+        pendingPhoto = null;
+        if (draftUrl) URL.revokeObjectURL(draftUrl);
+        draftUrl = null;
+        el.photoPreview.removeAttribute("src");
+        el.photoDraft.classList.add("hidden");
+      }
+
+      function showDraftPhoto(blob) {
+        pendingPhoto = blob;
+        if (draftUrl) URL.revokeObjectURL(draftUrl);
+        draftUrl = URL.createObjectURL(blob);
+        el.photoPreview.src = draftUrl;
+        el.photoDraft.classList.remove("hidden");
+      }
+
+      function readJpegSize(buffer) {
+        var view = new DataView(buffer);
+        if (view.byteLength < 4 || view.getUint16(0) !== 0xffd8) return null;
+        var offset = 2;
+        while (offset + 9 < view.byteLength) {
+          var marker = view.getUint16(offset);
+          if (marker === 0xffd9 || marker === 0xffda) break;
+          var size = view.getUint16(offset + 2);
+          if (marker >= 0xffc0 && marker <= 0xffc2) {
+            return {
+              height: view.getUint16(offset + 5),
+              width: view.getUint16(offset + 7)
+            };
+          }
+          if (size < 2) break;
+          offset += 2 + size;
+        }
+        return null;
+      }
+
+      function readExifOrientation(buffer) {
+        var view = new DataView(buffer);
+        if (view.byteLength < 4 || view.getUint16(0) !== 0xffd8) return 1;
+        var offset = 2;
+        while (offset + 4 < view.byteLength) {
+          var marker = view.getUint16(offset);
+          if (marker === 0xffe1) {
+            var exifStart = offset + 4;
+            if (view.getUint32(exifStart) !== 0x45786966) return 1;
+            var tiff = exifStart + 6;
+            var little = view.getUint16(tiff) === 0x4949;
+            var get16 = function (p) { return view.getUint16(p, little); };
+            var get32 = function (p) { return view.getUint32(p, little); };
+            var ifd = tiff + get32(tiff + 4);
+            var entries = get16(ifd);
+            for (var i = 0; i < entries; i++) {
+              var entry = ifd + 2 + i * 12;
+              if (get16(entry) === 0x0112) return get16(entry + 8) || 1;
+            }
+            return 1;
+          }
+          if ((marker & 0xff00) !== 0xff00) break;
+          offset += 2 + view.getUint16(offset + 2);
+        }
+        return 1;
+      }
+
+      function drawOriented(source, width, height, orientation) {
+        var maxSide = Math.max(width, height);
+        var scale = maxSide > PHOTO_MAX_PX ? PHOTO_MAX_PX / maxSide : 1;
+        var dw = Math.max(1, Math.round(width * scale));
+        var dh = Math.max(1, Math.round(height * scale));
+        var swap = orientation >= 5 && orientation <= 8;
+        var canvas = document.createElement("canvas");
+        canvas.width = swap ? dh : dw;
+        canvas.height = swap ? dw : dh;
+        var ctx = canvas.getContext("2d");
+        switch (orientation) {
+          case 2: ctx.translate(canvas.width, 0); ctx.scale(-1, 1); break;
+          case 3: ctx.translate(canvas.width, canvas.height); ctx.rotate(Math.PI); break;
+          case 4: ctx.translate(0, canvas.height); ctx.scale(1, -1); break;
+          case 5: ctx.rotate(0.5 * Math.PI); ctx.scale(1, -1); break;
+          case 6: ctx.rotate(0.5 * Math.PI); ctx.translate(0, -dh); break;
+          case 7: ctx.rotate(0.5 * Math.PI); ctx.translate(dw, -dh); ctx.scale(-1, 1); break;
+          case 8: ctx.rotate(-0.5 * Math.PI); ctx.translate(-dw, 0); break;
+          default: break;
+        }
+        ctx.drawImage(source, 0, 0, dw, dh);
+        return new Promise(function (resolve, reject) {
+          canvas.toBlob(function (blob) {
+            if (!blob) reject(new Error("jpeg"));
+            else resolve(blob);
+          }, "image/jpeg", PHOTO_QUALITY);
+        });
+      }
+
+      function orientationToApply(orientation, stored, width, height) {
+        var swaps = orientation >= 5 && orientation <= 8;
+        var stillRaw = swaps && stored && width === stored.width && height === stored.height;
+        return stillRaw ? orientation : 1;
+      }
+
+      function downscalePhoto(file) {
+        return file.arrayBuffer().then(function (buffer) {
+          var orientation = readExifOrientation(buffer);
+          var stored = readJpegSize(buffer);
+          function finish(source, width, height) {
+            return drawOriented(source, width, height, orientationToApply(orientation, stored, width, height));
+          }
+          if (typeof createImageBitmap === "function") {
+            return createImageBitmap(file, { imageOrientation: "from-image" }).then(function (bitmap) {
+              var blobPromise = finish(bitmap, bitmap.width, bitmap.height);
+              if (bitmap.close) bitmap.close();
+              return blobPromise;
+            }).catch(function () {
+              return createImageBitmap(file).then(function (bitmap) {
+                var blobPromise = finish(bitmap, bitmap.width, bitmap.height);
+                if (bitmap.close) bitmap.close();
+                return blobPromise;
+              });
+            });
+          }
+          return new Promise(function (resolve, reject) {
+            var url = URL.createObjectURL(file);
+            var img = new Image();
+            img.onload = function () {
+              URL.revokeObjectURL(url);
+              finish(img, img.naturalWidth, img.naturalHeight).then(resolve, reject);
+            };
+            img.onerror = function () {
+              URL.revokeObjectURL(url);
+              reject(new Error("image"));
+            };
+            img.src = url;
+          });
+        });
+      }
+
+      function icsStamp(date) {
+        function z(n) { return (n < 10 ? "0" : "") + n; }
+        return date.getUTCFullYear() + z(date.getUTCMonth() + 1) + z(date.getUTCDate()) +
+          "T" + z(date.getUTCHours()) + z(date.getUTCMinutes()) + z(date.getUTCSeconds()) + "Z";
+      }
+
+      function icsEscape(value) {
+        return String(value || "")
+          .replace(/\\/g, "\\\\")
+          .replace(/\r\n|\n|\r/g, "\\n")
+          .replace(/,/g, "\\,")
+          .replace(/;/g, "\\;");
+      }
+
+      function buildIcs(pin) {
+        var start = new Date(pin.savedAt);
+        var end = new Date(pin.endsAt);
+        var alarm = new Date(end.getTime() - 10 * 60 * 1000);
+        var lines = [
+          "BEGIN:VCALENDAR",
+          "VERSION:2.0",
+          "PRODID:-//Parking Pin//EN",
+          "CALSCALE:GREGORIAN",
+          "METHOD:PUBLISH",
+          "BEGIN:VEVENT",
+          "UID:parking-" + end.getTime() + "@fambeho75.github.io",
+          "DTSTAMP:" + icsStamp(new Date()),
+          "DTSTART:" + icsStamp(start),
+          "DTEND:" + icsStamp(end),
+          "SUMMARY:Parking expires",
+          "DESCRIPTION:" + icsEscape(pin.note || ""),
+          "BEGIN:VALARM",
+          "TRIGGER;VALUE=DATE-TIME:" + icsStamp(alarm),
+          "ACTION:DISPLAY",
+          "DESCRIPTION:Parking expires",
+          "END:VALARM",
+          "END:VEVENT",
+          "END:VCALENDAR"
+        ];
+        return lines.join("\r\n") + "\r\n";
+      }
+
+      function openCalendar(pin) {
+        if (!pin || !pin.endsAt) return;
+        var blob = new Blob([buildIcs(pin)], { type: "text/calendar" });
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement("a");
+        link.href = url;
+        link.download = "parking-expires.ics";
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(function () {
+          URL.revokeObjectURL(url);
+          link.remove();
+        }, 1500);
       }
 
       function mapsUrls(lat, lng) {
@@ -830,16 +1373,22 @@
           el.pinEntry.classList.add("hidden");
           el.linkGoogle.classList.add("hidden");
           hideMap();
+          hideShownPhoto();
           syncNoteChips();
+          syncDurationChips(selectedMinutes);
+          if (pendingPhoto) showDraftPhoto(pendingPhoto);
+          updateCountdown();
           return;
         }
 
         el.pinEntry.classList.remove("hidden");
+        el.photoDraft.classList.add("hidden");
 
         var noteText = (pin.note && String(pin.note).trim()) || "No note";
         var timeText = formatTime(pin.savedAt);
         el.entryNote.textContent = noteText;
         el.entryTime.textContent = timeText;
+        el.pinEntry.setAttribute("data-base-label", "Saved pin, " + noteText + ", " + timeText);
         el.pinEntry.setAttribute("aria-label", "Saved pin, " + noteText + ", " + timeText);
         el.pinTime.textContent = timeText;
         el.pinNote.textContent = noteText;
@@ -871,6 +1420,9 @@
           el.note.value = pin.note;
         }
         syncNoteChips();
+        syncDurationChips(minutesFromPin(pin));
+        showStoredPhoto(pin);
+        updateCountdown();
       }
 
       function getPosition() {
@@ -899,13 +1451,19 @@
         el.btnPark.disabled = true;
 
         var note = (el.note.value || "").trim();
+        var minutes = selectedMinutes;
+        var photoBlob = pendingPhoto;
+        var saved = new Date();
         var pin = {
           lat: null,
           lng: null,
           accuracy: null,
           note: note,
-          savedAt: new Date().toISOString()
+          savedAt: saved.toISOString()
         };
+        if (minutes) {
+          pin.endsAt = new Date(saved.getTime() + minutes * 60000).toISOString();
+        }
 
         if (isSecureContextOk()) {
           try {
@@ -922,8 +1480,28 @@
           render();
           return;
         }
-        savePin(pin);
-        render();
+
+        var stored = photoBlob
+          ? savePhotoBlob(photoBlob).then(function () { pin.hasPhoto = true; })
+          : deletePhotoBlob();
+        stored.then(function () {
+          if (loadPin()) {
+            render();
+            return;
+          }
+          savePin(pin);
+          clearDraftPhoto();
+          render();
+        }).catch(function () {
+          if (loadPin()) {
+            render();
+            return;
+          }
+          delete pin.hasPhoto;
+          savePin(pin);
+          clearDraftPhoto();
+          render();
+        });
       }
 
       function findCar() {
@@ -932,21 +1510,31 @@
         window.location.href = directionsUrl(pin.lat, pin.lng);
       }
 
+      function wipePin() {
+        clearPinStorage();
+        selectedMinutes = null;
+        clearDraftPhoto();
+        hideShownPhoto();
+        return deletePhotoBlob();
+      }
+
       function openClearDialog() {
         if (typeof el.dialog.showModal === "function") {
           el.dialog.showModal();
         } else if (window.confirm("Clear parking pin?")) {
-          clearPinStorage();
-          if (location.hash) location.hash = "";
-          render();
+          wipePin().then(function () {
+            if (location.hash) location.hash = "";
+            render();
+          });
         }
       }
 
       function confirmClear() {
-        clearPinStorage();
         el.dialog.close();
-        if (location.hash) location.hash = "";
-        render();
+        wipePin().then(function () {
+          if (location.hash) location.hash = "";
+          render();
+        });
       }
 
       if (el.chips) {
@@ -956,6 +1544,49 @@
           toggleNoteChip(btn.getAttribute("data-note"));
         });
       }
+
+      if (el.durationChips) {
+        el.durationChips.addEventListener("click", function (e) {
+          var btn = e.target && e.target.closest ? e.target.closest(".chip") : null;
+          if (!btn || !el.durationChips.contains(btn)) return;
+          toggleDurationChip(Number(btn.getAttribute("data-minutes")));
+        });
+      }
+
+      el.btnCamera.addEventListener("click", function () {
+        if (el.btnCamera.disabled) return;
+        el.photoInput.click();
+      });
+
+      el.photoInput.addEventListener("change", function () {
+        var file = el.photoInput.files && el.photoInput.files[0];
+        el.photoInput.value = "";
+        if (!file || el.btnCamera.disabled) return;
+        downscalePhoto(file).then(showDraftPhoto).catch(function () { /* ignore unreadable image */ });
+      });
+
+      el.btnPhotoRemove.addEventListener("click", function () {
+        if (el.btnPhotoRemove.disabled) return;
+        clearDraftPhoto();
+      });
+
+      el.pinPhotoBtn.addEventListener("click", function () {
+        if (!shownUrl) return;
+        el.lightbox.classList.remove("hidden");
+      });
+
+      function closeLightbox() {
+        el.lightbox.classList.add("hidden");
+      }
+
+      el.lightboxClose.addEventListener("click", closeLightbox);
+      el.lightbox.addEventListener("click", function (e) {
+        if (e.target === el.lightbox || e.target === el.lightboxImg) closeLightbox();
+      });
+
+      el.btnRemind.addEventListener("click", function () {
+        openCalendar(loadPin());
+      });
 
       el.note.addEventListener("input", syncNoteChips);
 
@@ -980,6 +1611,10 @@
       });
 
       render();
+      setInterval(updateCountdown, 30000);
+      document.addEventListener("visibilitychange", function () {
+        if (document.visibilityState === "visible") updateCountdown();
+      });
 
       if ("serviceWorker" in navigator) {
         var refreshing = false;

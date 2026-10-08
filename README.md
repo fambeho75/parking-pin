@@ -12,12 +12,12 @@ That GitHub Pages address is HTTPS, which phones require before they will share 
 
 1. Open https://fambeho75.github.io/parking-pin/ on your iPhone or Android phone.
 2. Optional: add it to the home screen so the next visit is one tap. iPhone: Share → **Add to Home Screen**. Android: browser menu → **Add to Home screen** or **Install app**.
-3. In the garage, tap a note chip or type a level or zone, then tap **I’m parked** and allow location.
-4. Later, open that same bookmark or home-screen icon, tap the saved pin (note and time), then tap **Find car**. Apple Maps opens on iPhone; Google Maps opens on Android. Tapping the map does the same thing. **Back** returns to the main screen.
+3. In the garage, tap a note chip or type a level or zone. Optional: tap **30 min**, **1 h**, **2 h**, or **3 h**, or add a photo of the spot. Then tap **I’m parked** and allow location.
+4. Later, open that same bookmark or home-screen icon, tap the saved pin (note, time, and countdown if you set one), then tap **Find car**. Apple Maps opens on iPhone; Google Maps opens on Android. Tapping the map does the same thing. **Back** returns to the main screen. **Remind me** adds the expiry to Calendar when a time was set.
 
 The pin is stored only on that phone, in that browser (`localStorage`). It is not saved in the cloud. Another phone, another browser, or cleared site data starts empty.
 
-**I’m parked** stays off while a pin is saved. **Clear pin** asks first, then **I’m parked** works again. Chips append with ` · `; tap a chip again to remove it. A GPS pin shows a map above **Find car**. A note-only pin hides the map.
+**I’m parked** stays off while a pin is saved. **Clear pin** asks first, then **I’m parked** works again, and it also removes the photo and the timer. Chips append with ` · `; tap a chip again to remove it. Duration chips pick one time, or tap again to clear it. A GPS pin shows a map above **Find car**. A note-only pin hides the map. The countdown turns warning-colored under 10 minutes and says **Expired** after that.
 
 ## Map
 
@@ -44,4 +44,6 @@ Open http://127.0.0.1:8777/ (GPS works on localhost). Do not open the file with 
 ## Storage
 
 Key: `parking-pin-v1`  
-Shape: `{ lat, lng, accuracy, note, savedAt }`
+Shape: `{ lat, lng, accuracy, note, savedAt, endsAt?, hasPhoto? }`
+
+Older pins without `endsAt` or `hasPhoto` still open. A photo, when present, is a JPEG in IndexedDB (`parking-pin-photos`, store `photos`, key `spot`), not in `localStorage`.
