@@ -488,7 +488,7 @@
 
   <section class="card" id="pin-empty-card">
     <h2 id="pin-heading-empty" class="hidden">Saved pin</h2>
-    <div id="pin-empty" class="pin-empty">Tap <strong>I’m parked</strong> to create a pin.</div>
+    <div id="pin-empty" class="pin-empty">No pin yet. Tap <strong>I’m parked</strong> to create one.</div>
   </section>
 
   <a class="pin-entry hidden" id="pin-entry" href="#pin">
@@ -1025,8 +1025,27 @@
       render();
 
       if ("serviceWorker" in navigator) {
+        var refreshing = false;
+        var hadController = !!navigator.serviceWorker.controller;
+        navigator.serviceWorker.addEventListener("controllerchange", function () {
+          if (!hadController) {
+            hadController = true;
+            return;
+          }
+          if (refreshing) return;
+          refreshing = true;
+          location.reload();
+        });
         window.addEventListener("load", function () {
-          navigator.serviceWorker.register("./sw.js").catch(function () { /* optional */ });
+          navigator.serviceWorker.register("./sw.js").then(function (reg) {
+            function checkForUpdate() {
+              reg.update().catch(function () { /* optional */ });
+            }
+            checkForUpdate();
+            document.addEventListener("visibilitychange", function () {
+              if (document.visibilityState === "visible") checkForUpdate();
+            });
+          }).catch(function () { /* optional */ });
         });
       }
     })();

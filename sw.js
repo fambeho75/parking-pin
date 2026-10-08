@@ -1,5 +1,5 @@
 /* Parking Pin — minimal offline cache */
-const CACHE = "parking-pin-v19";
+const CACHE = "parking-pin-v20";
 const ASSETS = [
   "./",
   "./index.html",
@@ -15,7 +15,14 @@ const ASSETS = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting())
+    caches.open(CACHE).then((cache) =>
+      Promise.all(ASSETS.map((path) =>
+        fetch(new Request(path, { cache: "no-store" })).then((res) => {
+          if (!res || !res.ok) throw new Error(path);
+          return cache.put(path, res);
+        })
+      ))
+    ).then(() => self.skipWaiting())
   );
 });
 
@@ -41,7 +48,7 @@ self.addEventListener("fetch", (event) => {
 
   if (isAppShell) {
     event.respondWith(
-      fetch(req)
+      fetch(req.url, { cache: "no-store", credentials: "same-origin" })
         .then((res) => {
           if (res && res.ok && res.type === "basic") {
             const copy = res.clone();
