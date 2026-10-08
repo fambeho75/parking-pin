@@ -26,7 +26,6 @@
       --accent-press: #e55f00;
       --on-accent: #111111;
       --danger: #ff4d4d;
-      --ok: #3dd68c;
       --radius: 16px;
       --safe-bottom: env(safe-area-inset-bottom, 0px);
       --safe-top: env(safe-area-inset-top, 0px);
@@ -120,6 +119,7 @@
     }
 
     input[type="text"]::placeholder { color: #8a8a8a; }
+    input[type="text"]:disabled { color: #8a8a8a; }
 
     .chips {
       display: flex;
@@ -160,6 +160,11 @@
       outline-offset: 2px;
     }
 
+    .chip:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
     .btn {
       display: flex;
       align-items: center;
@@ -186,6 +191,12 @@
       border-color: var(--accent);
     }
     .btn-primary:active:not(:disabled) { background: var(--accent-press); border-color: var(--accent-press); }
+    .btn-primary:disabled {
+      background: #2a2a2a;
+      color: #8a8a8a;
+      border-color: #333333;
+      opacity: 1;
+    }
 
     .btn-secondary {
       background: var(--surface2);
@@ -210,30 +221,6 @@
       min-height: 52px;
       font-size: 1rem;
       margin-top: 10px;
-    }
-
-    .status {
-      min-height: 1.4em;
-      margin-top: 12px;
-      font-size: 0.95rem;
-      color: var(--muted);
-      text-align: center;
-    }
-    .status.error { color: var(--danger); }
-    .status.ok { color: var(--ok); }
-
-    .pin-replace {
-      margin: 8px 0 0;
-      text-align: center;
-      color: var(--muted);
-      font-size: 0.85rem;
-    }
-
-    .pin-empty {
-      color: var(--muted);
-      text-align: center;
-      padding: 12px 8px 4px;
-      font-size: 0.95rem;
     }
 
     .pin-entry {
@@ -482,13 +469,6 @@
     <button type="button" class="btn btn-primary" id="btn-park">
       I’m parked
     </button>
-    <p class="pin-replace hidden" id="pin-replace">This replaces the saved pin.</p>
-    <p class="status" id="status" role="status" aria-live="polite"></p>
-  </section>
-
-  <section class="card" id="pin-empty-card">
-    <h2 id="pin-heading-empty" class="hidden">Saved pin</h2>
-    <div id="pin-empty" class="pin-empty">No pin yet. Tap <strong>I’m parked</strong> to create one.</div>
   </section>
 
   <a class="pin-entry hidden" id="pin-entry" href="#pin">
@@ -570,12 +550,9 @@
       var el = {
         note: document.getElementById("note"),
         chips: document.getElementById("note-chips"),
-        status: document.getElementById("status"),
         btnPark: document.getElementById("btn-park"),
-        pinReplace: document.getElementById("pin-replace"),
         viewMain: document.getElementById("view-main"),
         viewDetail: document.getElementById("view-detail"),
-        pinEmptyCard: document.getElementById("pin-empty-card"),
         pinEntry: document.getElementById("pin-entry"),
         entryNote: document.getElementById("entry-note"),
         entryTime: document.getElementById("entry-time"),
@@ -647,9 +624,12 @@
         return Number(lat).toFixed(5) + ", " + Number(lng).toFixed(5);
       }
 
-      function setStatus(msg, kind) {
-        el.status.textContent = msg || "";
-        el.status.className = "status" + (kind ? " " + kind : "");
+      function setComposerLocked(locked) {
+        el.btnPark.disabled = locked;
+        el.note.disabled = locked;
+        if (!el.chips) return;
+        var buttons = el.chips.querySelectorAll(".chip");
+        for (var i = 0; i < buttons.length; i++) buttons[i].disabled = locked;
       }
 
       function escapeRegExp(s) {
@@ -702,7 +682,7 @@
       }
 
       function toggleNoteChip(label) {
-        if (!label) return;
+        if (!label || el.note.disabled) return;
         var current = el.note.value || "";
         if (noteHasChip(current, label)) {
           el.note.value = removeChipLabel(current, label);
@@ -712,10 +692,7 @@
         var trimmed = current.trim();
         var next = trimmed ? trimmed + NOTE_SEP + label : label;
         var max = el.note.maxLength > 0 ? el.note.maxLength : 120;
-        if (next.length > max) {
-          setStatus("Note is full (" + max + " characters).", "error");
-          return;
-        }
+        if (next.length > max) return;
         el.note.value = next;
         syncNoteChips();
       }
@@ -847,18 +824,16 @@
         el.viewMain.classList.toggle("hidden", detail);
         el.viewDetail.classList.toggle("hidden", !detail);
 
+        setComposerLocked(!!pin);
+
         if (!pin) {
-          el.pinEmptyCard.classList.remove("hidden");
           el.pinEntry.classList.add("hidden");
           el.linkGoogle.classList.add("hidden");
-          el.pinReplace.classList.add("hidden");
           hideMap();
           syncNoteChips();
           return;
         }
 
-        el.pinReplace.classList.remove("hidden");
-        el.pinEmptyCard.classList.add("hidden");
         el.pinEntry.classList.remove("hidden");
 
         var noteText = (pin.note && String(pin.note).trim()) || "No note";
@@ -912,14 +887,6 @@
         });
       }
 
-      function geoErrorMessage(err) {
-        if (!err) return "Could not get location.";
-        if (err.code === 1) return "Location permission denied. Saving note only.";
-        if (err.code === 2) return "Location unavailable. Saving note only.";
-        if (err.code === 3) return "Location timed out. Saving note only.";
-        return (err.message || "Could not get location.") + " Saving note only.";
-      }
-
       function isSecureContextOk() {
         return window.isSecureContext === true ||
           location.protocol === "https:" ||
@@ -928,9 +895,8 @@
       }
 
       async function park() {
-        var replacing = !!loadPin();
+        if (loadPin() || el.btnPark.disabled) return;
         el.btnPark.disabled = true;
-        setStatus("Locating…");
 
         var note = (el.note.value || "").trim();
         var pin = {
@@ -941,35 +907,28 @@
           savedAt: new Date().toISOString()
         };
 
-        if (!isSecureContextOk()) {
-          setStatus("GPS needs HTTPS or localhost. Saving note only.", "error");
-        } else {
+        if (isSecureContextOk()) {
           try {
             var pos = await getPosition();
             pin.lat = pos.coords.latitude;
             pin.lng = pos.coords.longitude;
             pin.accuracy = pos.coords.accuracy;
-            setStatus(replacing ? "Pin replaced." : "Pin saved with GPS.", "ok");
           } catch (err) {
-            setStatus(geoErrorMessage(err), "error");
+            /* save the note without coordinates */
           }
         }
 
-        if (pin.lat == null && !note) {
-          /* still save a timestamp pin so the flow is useful */
+        if (loadPin()) {
+          render();
+          return;
         }
-
         savePin(pin);
         render();
-        el.btnPark.disabled = false;
       }
 
       function findCar() {
         var pin = loadPin();
-        if (!pin || pin.lat == null || pin.lng == null) {
-          setStatus("No GPS coordinates to navigate to.", "error");
-          return;
-        }
+        if (!pin || pin.lat == null || pin.lng == null) return;
         window.location.href = directionsUrl(pin.lat, pin.lng);
       }
 
@@ -978,7 +937,6 @@
           el.dialog.showModal();
         } else if (window.confirm("Clear parking pin?")) {
           clearPinStorage();
-          setStatus("Pin cleared.");
           if (location.hash) location.hash = "";
           render();
         }
@@ -987,7 +945,6 @@
       function confirmClear() {
         clearPinStorage();
         el.dialog.close();
-        setStatus("Pin cleared.");
         if (location.hash) location.hash = "";
         render();
       }

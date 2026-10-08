@@ -17,7 +17,7 @@ That GitHub Pages address is HTTPS, which phones require before they will share 
 
 The pin is stored only on that phone, in that browser (`localStorage`). It is not saved in the cloud. Another phone, another browser, or cleared site data starts empty.
 
-Tap **I’m parked** again to replace the saved pin. **Clear pin** asks first. Chips append with ` · `; tap a chip again to remove it. A GPS pin shows a map above **Find car**. A note-only pin hides the map.
+**I’m parked** stays off while a pin is saved. **Clear pin** asks first, then **I’m parked** works again. Chips append with ` · `; tap a chip again to remove it. A GPS pin shows a map above **Find car**. A note-only pin hides the map.
 
 ## Map
 
