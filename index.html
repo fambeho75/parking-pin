@@ -352,6 +352,43 @@
 
     .pin-entry-countdown.is-warn { color: #ff4d2e; }
 
+    .accuracy-badge {
+      display: inline-block;
+      margin-top: 4px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid #ff4d2e;
+      color: #ff4d2e;
+      background: transparent;
+      font-size: 0.8rem;
+      font-weight: 700;
+      line-height: 1.3;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .gps-nudge {
+      display: block;
+      width: 100%;
+      margin: 8px 0 0;
+      padding: 10px 12px;
+      min-height: 48px;
+      border-radius: 12px;
+      border: 1px solid #ff4d2e;
+      background: transparent;
+      color: #ff4d2e;
+      font: inherit;
+      font-size: 0.92rem;
+      font-weight: 700;
+      line-height: 1.3;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .gps-nudge:focus-visible {
+      outline: 2px solid #ff4d2e;
+      outline-offset: 2px;
+    }
+
     .pin-entry-chevron {
       flex-shrink: 0;
       color: var(--accent);
@@ -484,6 +521,18 @@
       background: var(--accent);
       border: 3px solid #111;
       z-index: 2;
+      pointer-events: none;
+    }
+
+    .map-ring {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      border: 2px solid #ff4d2e;
+      background: rgba(255, 77, 46, 0.16);
+      z-index: 1;
       pointer-events: none;
     }
 
@@ -643,6 +692,7 @@
       <span class="pin-entry-note" id="entry-note">—</span>
       <span class="pin-entry-time" id="entry-time">—</span>
       <span class="pin-entry-countdown hidden" id="entry-countdown"></span>
+      <span class="accuracy-badge hidden" id="entry-accuracy"></span>
     </span>
     <span class="pin-entry-chevron" aria-hidden="true">›</span>
   </a>
@@ -666,11 +716,9 @@
           <span class="meta-label">Coords</span>
           <span class="meta-value coords" id="pin-coords">—</span>
         </div>
-        <div class="meta-row" id="accuracy-row">
-          <span class="meta-label">Accuracy</span>
-          <span class="meta-value" id="pin-accuracy">—</span>
-        </div>
       </div>
+      <span class="accuracy-badge hidden" id="detail-accuracy"></span>
+      <button type="button" class="gps-nudge hidden" id="gps-nudge">GPS weak here, add a photo or note to find the car</button>
 
       <button type="button" class="pin-photo hidden" id="pin-photo-btn" aria-label="Parking spot photo">
         <img id="pin-photo" alt="Parking spot">
@@ -682,6 +730,7 @@
         <a class="map-link" id="map-link" href="#">
           <span class="map-stage" id="map-stage"></span>
           <span class="map-dot" aria-hidden="true"></span>
+          <span class="map-ring hidden" id="map-ring" aria-hidden="true"></span>
         </a>
         <p class="map-fallback hidden" id="map-fallback">map unavailable</p>
         <a class="map-credit" id="map-credit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a>
@@ -720,8 +769,8 @@
       var PHOTO_DB = "parking-pin-photos";
       var PHOTO_STORE = "photos";
       var PHOTO_KEY = "spot";
-      var GEO_TIMEOUT_MS = 20000;
-      var GEO_MAX_AGE_MS = 10000;
+      var GEO_WATCH_MS = 8000;
+      var ACCURACY_GOOD_M = 30;
       var PHOTO_MAX_PX = 1280;
       var PHOTO_QUALITY = 0.7;
 
@@ -732,6 +781,7 @@
 
       var selectedMinutes = null;
       var pendingPhoto = null;
+      var attachExisting = false;
       var draftUrl = null;
       var shownUrl = null;
       var photoToken = 0;
@@ -753,13 +803,15 @@
         entryNote: document.getElementById("entry-note"),
         entryTime: document.getElementById("entry-time"),
         entryCountdown: document.getElementById("entry-countdown"),
+        entryAccuracy: document.getElementById("entry-accuracy"),
+        detailAccuracy: document.getElementById("detail-accuracy"),
+        gpsNudge: document.getElementById("gps-nudge"),
         btnBack: document.getElementById("btn-back"),
         pinTime: document.getElementById("pin-time"),
         pinNote: document.getElementById("pin-note"),
         pinCoords: document.getElementById("pin-coords"),
-        pinAccuracy: document.getElementById("pin-accuracy"),
-        accuracyRow: document.getElementById("accuracy-row"),
         mapBlock: document.getElementById("map-block"),
+        mapRing: document.getElementById("map-ring"),
         mapLink: document.getElementById("map-link"),
         mapStage: document.getElementById("map-stage"),
         mapFallback: document.getElementById("map-fallback"),
@@ -960,8 +1012,35 @@
         el.entryCountdown.classList.remove("hidden");
         el.entryCountdown.classList.toggle("is-warn", countdown.warn);
         el.btnRemind.classList.toggle("hidden", !pin.endsAt);
-        var label = el.pinEntry.getAttribute("data-base-label");
-        if (label) el.pinEntry.setAttribute("aria-label", label + ", " + countdown.text);
+        refreshEntryLabel();
+      }
+
+      function refreshEntryLabel() {
+        var base = el.pinEntry.getAttribute("data-base-label");
+        if (!base) return;
+        var label = base;
+        if (!el.entryCountdown.classList.contains("hidden") && el.entryCountdown.textContent) {
+          label += ", " + el.entryCountdown.textContent;
+        }
+        if (!el.entryAccuracy.classList.contains("hidden") && el.entryAccuracy.textContent) {
+          label += ", " + el.entryAccuracy.textContent;
+        }
+        el.pinEntry.setAttribute("aria-label", label);
+      }
+
+      function isWeakAccuracy(pin) {
+        return !!(pin && pin.accuracy != null && !isNaN(Number(pin.accuracy)) && Number(pin.accuracy) > ACCURACY_GOOD_M);
+      }
+
+      function updateGpsHint(pin) {
+        var weak = isWeakAccuracy(pin);
+        var label = weak ? "±" + Math.round(Number(pin.accuracy)) + " m" : "";
+        el.entryAccuracy.textContent = label;
+        el.entryAccuracy.classList.toggle("hidden", !weak);
+        el.detailAccuracy.textContent = label;
+        el.detailAccuracy.classList.toggle("hidden", !weak);
+        el.gpsNudge.classList.toggle("hidden", !(weak && !pin.hasPhoto));
+        refreshEntryLabel();
       }
 
       function openPhotoDb() {
@@ -1262,6 +1341,7 @@
         el.mapCredit.classList.add("hidden");
         el.mapStage.innerHTML = "";
         el.mapLink.removeAttribute("href");
+        if (el.mapRing) el.mapRing.classList.add("hidden");
       }
 
       function showMapError() {
@@ -1273,12 +1353,32 @@
         el.mapFallback.classList.remove("hidden");
       }
 
-      function showStaticMap(lat, lng, href) {
+      function showMapRing(lat, accuracy) {
+        if (!el.mapRing) return;
+        var meters = Number(accuracy);
+        var latitude = Number(lat);
+        if (!(meters > ACCURACY_GOOD_M) || isNaN(latitude)) {
+          el.mapRing.classList.add("hidden");
+          return;
+        }
+        var metersPerPixel = 156543.03392 * Math.cos(latitude * Math.PI / 180) / Math.pow(2, MAP_ZOOM);
+        if (!metersPerPixel || metersPerPixel <= 0) {
+          el.mapRing.classList.add("hidden");
+          return;
+        }
+        var diameter = (2 * meters) / metersPerPixel;
+        el.mapRing.style.width = diameter + "px";
+        el.mapRing.style.height = diameter + "px";
+        el.mapRing.classList.remove("hidden");
+      }
+
+      function showStaticMap(lat, lng, href, accuracy) {
         var token = ++mapToken;
         el.mapBlock.classList.remove("hidden");
         el.mapLink.classList.remove("hidden");
         el.mapCredit.classList.remove("hidden");
         el.mapFallback.classList.add("hidden");
+        showMapRing(lat, accuracy);
         el.mapLink.href = href;
         el.mapLink.setAttribute("aria-label", "Map of saved pin. Open directions.");
         el.mapStage.innerHTML = "";
@@ -1374,6 +1474,7 @@
           el.linkGoogle.classList.add("hidden");
           hideMap();
           hideShownPhoto();
+          updateGpsHint(null);
           syncNoteChips();
           syncDurationChips(selectedMinutes);
           if (pendingPhoto) showDraftPhoto(pendingPhoto);
@@ -1393,13 +1494,7 @@
         el.pinTime.textContent = timeText;
         el.pinNote.textContent = noteText;
         el.pinCoords.textContent = formatCoords(pin.lat, pin.lng);
-
-        if (pin.accuracy != null && !isNaN(pin.accuracy)) {
-          el.accuracyRow.classList.remove("hidden");
-          el.pinAccuracy.textContent = "±" + Math.round(pin.accuracy) + " m";
-        } else {
-          el.accuracyRow.classList.add("hidden");
-        }
+        updateGpsHint(pin);
 
         var hasGps = pin.lat != null && pin.lng != null && !isNaN(pin.lat) && !isNaN(pin.lng);
         el.btnFind.disabled = !hasGps;
@@ -1409,7 +1504,7 @@
           el.btnFind.dataset.google = urls.google;
           el.linkGoogle.href = urls.google;
           el.linkGoogle.classList.toggle("hidden", !isIOS());
-          if (detail) showStaticMap(pin.lat, pin.lng, directionsUrl(pin.lat, pin.lng));
+          if (detail) showStaticMap(pin.lat, pin.lng, directionsUrl(pin.lat, pin.lng), pin.accuracy);
           else hideMap();
         } else {
           el.linkGoogle.classList.add("hidden");
@@ -1425,17 +1520,47 @@
         updateCountdown();
       }
 
-      function getPosition() {
+      function bestPosition() {
         return new Promise(function (resolve, reject) {
-          if (!navigator.geolocation) {
+          var geo = navigator.geolocation;
+          if (!geo) {
             reject(new Error("Geolocation is not supported in this browser."));
             return;
           }
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
+          var best = null;
+          var done = false;
+          var watchId = null;
+          var timer = null;
+          var options = {
             enableHighAccuracy: true,
-            timeout: GEO_TIMEOUT_MS,
-            maximumAge: GEO_MAX_AGE_MS
-          });
+            timeout: GEO_WATCH_MS,
+            maximumAge: 0
+          };
+
+          function finish(err) {
+            if (done) return;
+            done = true;
+            if (watchId != null && geo.clearWatch) geo.clearWatch(watchId);
+            if (timer) clearTimeout(timer);
+            if (best) resolve(best);
+            else reject(err || new Error("no fix"));
+          }
+
+          function consider(pos) {
+            if (done || !pos || !pos.coords) return;
+            var acc = Number(pos.coords.accuracy);
+            var bestAcc = best ? Number(best.coords.accuracy) : NaN;
+            if (!best || (!isNaN(acc) && (isNaN(bestAcc) || acc < bestAcc))) best = pos;
+            if (best && Number(best.coords.accuracy) <= ACCURACY_GOOD_M) finish();
+          }
+
+          timer = setTimeout(function () { finish(); }, GEO_WATCH_MS);
+          if (geo.watchPosition) {
+            watchId = geo.watchPosition(consider, function () { /* keep waiting for a better fix */ }, options);
+          }
+          geo.getCurrentPosition(consider, function (err) {
+            if (!geo.watchPosition) finish(err);
+          }, options);
         });
       }
 
@@ -1467,7 +1592,7 @@
 
         if (isSecureContextOk()) {
           try {
-            var pos = await getPosition();
+            var pos = await bestPosition();
             pin.lat = pos.coords.latitude;
             pin.lng = pos.coords.longitude;
             pin.accuracy = pos.coords.accuracy;
@@ -1553,15 +1678,44 @@
         });
       }
 
+      function attachPhotoToPin(file) {
+        var pin = loadPin();
+        if (!pin) return;
+        downscalePhoto(file).then(function (blob) {
+          return savePhotoBlob(blob).then(function () {
+            var current = loadPin();
+            if (!current) return;
+            current.hasPhoto = true;
+            savePin(current);
+            render();
+          });
+        }).catch(function () { /* ignore unreadable image */ });
+      }
+
       el.btnCamera.addEventListener("click", function () {
         if (el.btnCamera.disabled) return;
+        attachExisting = false;
+        el.photoInput.click();
+      });
+
+      el.gpsNudge.addEventListener("click", function () {
+        var pin = loadPin();
+        if (!pin || pin.hasPhoto || !isWeakAccuracy(pin)) return;
+        attachExisting = true;
         el.photoInput.click();
       });
 
       el.photoInput.addEventListener("change", function () {
         var file = el.photoInput.files && el.photoInput.files[0];
+        var attaching = attachExisting;
+        attachExisting = false;
         el.photoInput.value = "";
-        if (!file || el.btnCamera.disabled) return;
+        if (!file) return;
+        if (attaching) {
+          attachPhotoToPin(file);
+          return;
+        }
+        if (el.btnCamera.disabled) return;
         downscalePhoto(file).then(showDraftPhoto).catch(function () { /* ignore unreadable image */ });
       });
 
