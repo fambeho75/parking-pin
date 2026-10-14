@@ -47,3 +47,7 @@ Key: `parking-pin-v1`
 Shape: `{ lat, lng, accuracy, note, savedAt, endsAt?, hasPhoto? }`
 
 Older pins without `endsAt` or `hasPhoto` still open. A photo, when present, is a JPEG in IndexedDB (`parking-pin-photos`, store `photos`, key `spot`), not in `localStorage`.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
